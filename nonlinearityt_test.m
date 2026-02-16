@@ -5,17 +5,16 @@ clear; close all; clc;
 load('SNLS80mV.mat'); 
 V1 = V1(:) - mean(V1); 
 V2 = V2(:) - mean(V2);
-fs = 10^7 / 2^14; Ts = 1/fs;
 
 % Define Datasets
 % A. Nonlinear Training Data (Multisine Section)
 uTrain = V1(40650:40650+1023*4);
 yTrain = V2(40650:40650+1023*4);
-zTrain = iddata(yTrain, uTrain, Ts);
+zTrain = iddata(yTrain, uTrain);
 
 % B. Validation/Sweep Data (Triangular Sweep Section)
 sweep_range = 1:40500;
-zSweep = iddata(V2(sweep_range), V1(sweep_range), Ts);
+zSweep = iddata(V2(sweep_range), V1(sweep_range));
 
 
 % --- 2. DEFINE TEST WINDOWS (Low vs High Amplitude) ---
@@ -43,7 +42,7 @@ sys_lin_high = arx(zHigh, [2 2 1]); % Trained only on High data
 % Using your verified structure: [2 5 0] with cubic lags 1, 2, 3
 custom_regs = {'y1(t-1)^3', 'y1(t-2)^3', 'y1(t-3)^3'};
 opt = nlarxOptions('Focus', 'simulation');
-sys_nlarx = nlarx(zTrain, [2 5 0], 'linear', 'CustomRegressors', custom_regs, opt);
+sys_nlarx = nlarx(zTrain, [2 2 1], 'linear', 'CustomRegressors', custom_regs, opt);
 
 
 % --- 4. SIMULATE ALL MODELS ON FULL SWEEP ---

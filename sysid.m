@@ -26,7 +26,7 @@ custom_regs = {'y1(t-1)^3', 'y1(t-2)^3', 'y1(t-3)^3'};
 % na = 2 (Keep as 2nd order poles)
 % nb = 5 (INCREASED: Capture inputs u(t) down to u(t-4) to fix XCorr spikes)
 % nk = 0 (Keep Direct Feedthrough)
-orders = [2 5 0]; 
+orders = [2 2 1]; 
 
 % 4. TRAIN
 opt = nlarxOptions('Focus', 'simulation');
