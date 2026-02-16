@@ -53,14 +53,14 @@ subplot(2,1,2); plot(y); title('Output (V2) - Constant Section'); grid on;
 windowSize = 1024; % Window size for Welch's method
 overlap = 512;
 nfft = 2048;
-fs = 1; % Normalized frequency if sampling rate is unknown
+fs = 10^7 / 2^14; % Sampling frequency (~610 Hz)
 
 figure('Name', 'Input-Output Coherence');
 [Cxy, f] = mscohere(u, y, window( @hann, windowSize), overlap, nfft, fs);
 
 plot(f, Cxy, 'LineWidth', 1.5);
 title('Magnitude-Squared Coherence Estimate');
-xlabel('Frequency (Normalized)');
+xlabel('Frequency (Hz)');
 ylabel('Coherence (0 to 1)');
 grid on;
 ylim([0 1.1]);

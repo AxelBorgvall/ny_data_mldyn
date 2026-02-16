@@ -11,15 +11,16 @@ val_start_idx = 50000;
 val_end_idx = 55000;
 
 % Interval settings
-n_start = 20;
-n_step = 20;
-n_max = 500; % Adjust based on available data and processing time
+n_start = 100;
+n_step = 50;
+n_max = 1000; % Increased to match friend's scale and allow convergence
 n_values = n_start:n_step:n_max;
 
 % Model Orders (Guessing reasonable orders, can be tuned)
-na = 4; nb = 4; nk = 0; nc = 2; nf = 4;
+% na = 2; nb = 2; nk = 1; nc = 2; nf = 2; % Updated to match friend's complexity
 
-% na = 2; nb = 2; nk = 0; nc = 2; nf = 2;
+% na = 6; nb = 6; nk = 1; nc = 2; nf = 4;
+na = 2; nb = 2; nk = 1; nc = 2; nf = 2;
 % --- Load Data ---
 if ~exist(dataFile, 'file')
     error('File not found: %s', dataFile);
@@ -36,13 +37,19 @@ y_raw = T.V2;
 if any(isnan(u_raw)), u_raw = u_raw(~isnan(u_raw)); end
 if any(isnan(y_raw)), y_raw = y_raw(~isnan(y_raw)); end
 
+% --- Global Detrending ---
+% Fix: Remove mean globally. Detrending small segments inside the loop
+% creates mismatched DC offsets between training and validation data.
+% u_raw = u_raw - mean(u_raw);
+% y_raw = y_raw - mean(y_raw);
+u_raw = detrend(u_raw);
+y_raw = detrend(y_raw);
 % Prepare Data Object
 Ts = 1; % Sampling time (normalized)
 data_full = iddata(y_raw, u_raw, Ts);
 
 % Prepare Validation Data
 data_val = data_full(val_start_idx : val_end_idx);
-data_val = detrend(data_val);
 
 % Preallocate results
 fits_arx = zeros(length(n_values), 1);
@@ -66,7 +73,6 @@ for i = 1:length(n_values)
     
     % Extract subset
     data_sub = data_full(const_start_idx : const_start_idx + n - 1);
-    data_sub = detrend(data_sub); % Important for linear models
     
     % Fit Models
     m_arx = arx(data_sub, [na nb nk]);

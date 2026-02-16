@@ -10,8 +10,9 @@ const_start_idx = 40650;
 const_end_idx = 60650; % Use the full constant section for the check
 
 % Model Order (Adjust as needed)
-na = 7; nb = 5; nc = 2; nk = 1;
+% na = 6; nb = 6; nc = 2; nk = 1;
 
+na = 4; nb = 4; nk = 4; nc = 2; nf = 2;
 % --- Load Data ---
 if ~exist(dataFile, 'file')
     error('File not found: %s', dataFile);
