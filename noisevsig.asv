@@ -1,0 +1,101 @@
+%% Parametric Method Evaluation: ARX vs ARMAX vs OE
+clear; close all; clc;
+
+% 1. Setup Data
+load('Schroeder80mV.mat');
+V1 = V1 - mean(V1); 
+V2 = V2 - mean(V2);
+fs = 10^7 / 2^14;
+Ts = 1/fs;
+
+% Define full training set
+uFull = V1(40650:40650+1023);
+yFull = V2(40650:40650+1023);
+
+% Define Validation set (Next period) to test true accuracy
+uValid = V1(40650+1024 : 10585+2047);
+yValid = V2(40650+1024 : 10585+2047);
+zValid = iddata(yValid', uValid', Ts);
+
+% Settings for the loop
+data_lengths = 200:50:1024; % Start from 200 to ensure enough data for estimation
+num_steps = length(data_lengths);
+
+% Storage for Fit Percentages
+fits_arx   = zeros(num_steps, 1);
+fits_armax = zeros(num_steps, 1);
+fits_oe    = zeros(num_steps, 1);
+
+% Storage for Natural Frequency (to check stability)
+wn_arx = zeros(num_steps, 1);
+wn_oe  = zeros(num_steps, 1);
+
+%% 2. Iterative Evaluation Loop
+disp('Comparing ARX, ARMAX, and OE methods...');
+
+best_fit_val = -Inf;     % Start with a very low score
+best_model   = [];       % Placeholder for the object
+best_method  = '';       % Name of the best method
+best_N       = 0;        % How much data was used
+
+for k = 1:num_steps
+    N = data_lengths(k);
+    
+    % Create subset of training data
+    z_sub = iddata(yFull(1:N)', uFull(1:N)', Ts);
+    
+    % --- Model 1: ARX [na nb nk] ---
+    % Order [2 2 1]: 2 poles, 2 zeros(ish), 1 delay
+    m_arx = arx(z_sub, [2 2 1]); 
+    
+    % --- Model 2: Output Error (OE) [nb nf nk] ---
+    % OE focuses on the simulation dynamics G(z), ignoring noise model H(z)
+    m_oe = oe(z_sub, [2 2 1]);
+    
+    % --- Model 3: ARMAX [na nb nc nk] ---
+    % Adds a noise model 'nc' for colored noise
+    m_armax = armax(z_sub, [2 2 2 1]);
+    
+    % --- Evaluate on Validation Data ---
+    % We use 'compare' to get the NRMSE fit percentage
+    [~, fit1, ~] = compare(zValid, m_arx);
+    [~, fit2, ~] = compare(zValid, m_oe);
+    [~, fit3, ~] = compare(zValid, m_armax);
+    
+    fits_arx(k)   = fit1;
+    fits_oe(k)    = fit2;
+    fits_armax(k) = fit3;
+    
+    % Track Natural Frequency to see which stabilizes first
+    [w_a, ~] = damp(m_arx); wn_arx(k) = w_a(1);
+    [w_o, ~] = damp(m_oe);  wn_oe(k)  = w_o(1);
+end
+
+%% 3. Visualization
+figure('Name', 'Parametric Method Comparison');
+
+% Plot 1: Accuracy (Fit %) vs Data Length
+subplot(2,1,1);
+plot(data_lengths, fits_arx, 'b-o', 'LineWidth', 1.5); hold on;
+plot(data_lengths, fits_oe, 'r-s', 'LineWidth', 1.5);
+plot(data_lengths, fits_armax, 'g-d', 'LineWidth', 1.5);
+grid on;
+legend('ARX [2 2 1]', 'OE [2 2 1]', 'ARMAX [2 2 2 1]', 'Location', 'SouthEast');
+ylabel('Validation Fit (%)');
+title('Which method learns fastest? (Fit % on Validation Data)');
+
+% Plot 2: Parameter Stability (Natural Frequency)
+subplot(2,1,2);
+plot(data_lengths, wn_arx, 'b--'); hold on;
+plot(data_lengths, wn_oe, 'r-', 'LineWidth', 2);
+grid on;
+ylabel('Natural Frequency (rad/s)');
+xlabel('Data Length (N)');
+legend('ARX Pole', 'OE Pole');
+title('Parameter Convergence: ARX vs OE');
+
+%% 4. Final Analysis Output
+fprintf('Final Validation Fits (N=1024):\n');
+fprintf('ARX:   %.2f%%\n', fits_arx(end));
+fprintf('OE:    %.2f%%\n', fits_oe(end));
+fprintf('ARMAX: %.2f%%\n', fits_armax(end));
