@@ -19,3 +19,4 @@ uSchroeder=V1(10585:10585+1023);  % select the Schroeder section of the experime
 ySchroeder=V2(10585:10585+1023);
 % One period is 1024 points. Only the odd frequencies bins (f0,3f0,5f0,...) 
 % are excited. f0 = fs/N, N=1024.
+
