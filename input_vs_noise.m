@@ -55,9 +55,23 @@ overlap = 512;
 nfft = 2048;
 fs = 10^7 / 2^14; % Sampling frequency (~610 Hz)
 
-figure('Name', 'Input-Output Coherence');
-[Cxy, f] = mscohere(u, y, window( @hann, windowSize), overlap, nfft, fs);
+% Calculate PSDs for comparison
+[Pxx, f_pxx] = pwelch(u, window(@hann, windowSize), overlap, nfft, fs);
+[Pyy, f_pyy] = pwelch(y, window(@hann, windowSize), overlap, nfft, fs);
 
+figure('Name', 'Frequency Domain Analysis');
+
+% Plot 1: Power Spectra (Input vs Output)
+subplot(2,1,1);
+plot(f_pxx, 10*log10(Pxx), 'LineWidth', 1.2, 'DisplayName', 'Input PSD (u)'); hold on;
+plot(f_pyy, 10*log10(Pyy), 'LineWidth', 1.2, 'DisplayName', 'Output PSD (y)');
+title('Power Spectral Density (dB)');
+xlabel('Frequency (Hz)'); ylabel('Power (dB)');
+legend('Location', 'best'); grid on;
+
+% Plot 2: Coherence
+subplot(2,1,2);
+[Cxy, f] = mscohere(u, y, window( @hann, windowSize), overlap, nfft, fs);
 plot(f, Cxy, 'LineWidth', 1.5);
 title('Magnitude-Squared Coherence Estimate');
 xlabel('Frequency (Hz)');
